@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Driver Safety AI - Drowsiness Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+      :root {
+        --primary-blue: #007AFF;
+        --primary-blue-dark: #0056CC;
+        --success-green: #34C759;
+        --error-red: #FF3B30;
+        --warning-orange: #FF9500;
+        --text-primary: #1D1D1F;
+        --text-secondary: #86868B;
+        --bg-primary: #FFFFFF;
+        --bg-secondary: #F5F5F7;
+        --bg-tertiary: #FBFBFD;
+        --border-light: #E5E5E7;
+        --shadow-light: rgba(0, 0, 0, 0.04);
+        --shadow-medium: rgba(0, 0, 0, 0.08);
+        --shadow-heavy: rgba(0, 0, 0, 0.12);
+      }
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        line-height: 1.6;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* Header */
+      .header {
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border-light);
+        padding: 16px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(20px);
+        background: rgba(255, 255, 255, 0.95);
+        width: 100%;
+      }
+      
+      .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 32px;
+      }
+      
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .logo-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+      }
+      
+      .logo-text {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        padding: 40px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 1000px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      
+      .upload-section {
+        width: 100%;
+        max-width: 600px;
+        background: var(--bg-primary);
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 8px 32px var(--shadow-light);
+        border: 1px solid var(--border-light);
+      }
+      
+      .section-header {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      
+      .section-title {
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+      }
+      
+      .section-subtitle {
+        font-size: 16px;
+        color: var(--text-secondary);
+      }
+      
+      .upload-area {
+        border: 2px dashed var(--border-light);
+        border-radius: 20px;
+        padding: 48px 32px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: var(--bg-tertiary);
+        margin-bottom: 24px;
+      }
+      
+      .upload-area:hover {
+        border-color: var(--primary-blue);
+        background: rgba(0, 122, 255, 0.02);
+      }
+      
+      .upload-area.dragover {
+        border-color: var(--primary-blue);
+        background: rgba(0, 122, 255, 0.04);
+      }
+      
+      .upload-icon {
+        width: 64px;
+        height: 64px;
+        background: var(--primary-blue);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: white;
+        font-size: 28px;
+        transition: transform 0.3s ease;
+      }
+      
+      .upload-area:hover .upload-icon {
+        transform: translateY(-2px);
+      }
+      
+      .upload-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+      }
+      
+      .upload-subtext {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+      
+      #imageInput {
+        display: none;
+      }
+      
+      .preview-section {
+        text-align: center;
+        display: none;
+        margin-bottom: 24px;
+      }
+      
+      .preview-image {
+        max-width: 250px;
+        max-height: 250px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px var(--shadow-medium);
+        border: 1px solid var(--border-light);
+        margin-bottom: 20px;
+      }
+      
+      .analyze-btn {
+        background: var(--primary-blue);
+        color: white;
+        border: none;
+        padding: 14px 28px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: none;
+        font-family: inherit;
+      }
+      
+      .analyze-btn:hover {
+        background: var(--primary-blue-dark);
+        transform: translateY(-1px);
+      }
+      
+      .analyze-btn:disabled {
+        background: var(--text-secondary);
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .loading {
+        display: none;
+        text-align: center;
+        margin: 32px 0;
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--bg-secondary);
+        border-top: 3px solid var(--primary-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+      
+      .loading-text {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .result-section {
+        background: var(--bg-primary);
+        border-radius: 20px;
+        padding: 32px;
+        text-align: center;
+        display: none;
+        border: 1px solid var(--border-light);
+        animation: slideUp 0.4s ease;
+      }
+      
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .result-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: white;
+        font-size: 28px;
+      }
+      
+      .result-drowsy .result-icon {
+        background: var(--error-red);
+      }
+      
+      .result-alert .result-icon {
+        background: var(--success-green);
+      }
+      
+      .result-status {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+      
+      .result-drowsy .result-status {
+        color: var(--error-red);
+      }
+      
+      .result-alert .result-status {
+        color: var(--success-green);
+      }
+      
+      .result-confidence {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+      }
+      
+      .confidence-bar {
+        width: 100%;
+        height: 6px;
+        background: var(--bg-secondary);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 12px;
+      }
+      
+      .confidence-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 1s ease;
+        width: 0%;
+      }
+      
+      .result-drowsy .confidence-fill {
+        background: var(--error-red);
+      }
+      
+      .result-alert .confidence-fill {
+        background: var(--success-green);
+      }
+      
+      .confidence-text {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        margin-bottom: 20px;
+      }
+      
+      .retry-btn {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-light);
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+      }
+      
+      .retry-btn:hover {
+        background: var(--border-light);
+      }
+      
+      /* Features Section - Compact */
+      .features {
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-light);
+      }
+      
+      .feature {
+        text-align: center;
+        flex: 1;
+        max-width: 160px;
+      }
+      
+      .feature-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--bg-tertiary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+        color: var(--primary-blue);
+        font-size: 18px;
+      }
+      
+      .feature-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--text-primary);
+      }
+      
+      .feature-desc {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+      }
+      
+      /* Footer */
+      .footer {
+        background: var(--bg-primary);
+        border-top: 1px solid var(--border-light);
+        padding: 20px 0;
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 13px;
+        width: 100%;
+      }
+      
+      .footer-content {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 32px;
+      }
+      
+      /* Responsive */
+      @media (max-width: 768px) {
+        .header-content {
+          padding: 0 16px;
+        }
+        
+        .upload-section {
+          margin: 0 16px;
+          padding: 32px 24px;
+        }
+        
+        .main-content {
+          padding: 24px 16px;
+        }
+        
+        .features {
+          flex-direction: column;
+          gap: 20px;
+        }
+        
+        .feature {
+          max-width: none;
+        }
+        
+        .section-title {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <div class="logo-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+            <div class="logo-text">Safe Drive</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <div class="container">
+        <main class="main-content">
+        <div class="upload-section">
+          <div class="section-header">
+            <h1 class="section-title">Drowsiness Detection</h1>
+            <p class="section-subtitle">Upload a driver image for AI-powered safety analysis</p>
+          </div>
+          
+          <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div class="upload-text">Choose Image</div>
+            <div class="upload-subtext">or drag and drop here</div>
+          </div>
+          
+          <input type="file" id="imageInput" accept="image/*" />
+          
+          <div class="preview-section" id="previewSection">
+            <img id="previewImage" class="preview-image" />
+            <br>
+            <button class="analyze-btn" id="analyzeBtn" onclick="analyzeImage()">
+              <i class="fas fa-search"></i> Analyze Image
+            </button>
+          </div>
+          
+          <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Analyzing with AI...</div>
+          </div>
+          
+          <div class="result-section" id="resultSection">
+            <div class="result-icon" id="resultIcon"></div>
+            <div class="result-status" id="resultStatus"></div>
+            <div class="result-confidence" id="resultConfidence"></div>
+            <div class="confidence-bar">
+              <div class="confidence-fill" id="confidenceFill"></div>
+            </div>
+            <div class="confidence-text" id="confidenceText"></div>
+            <button class="retry-btn" onclick="resetUpload()">
+              <i class="fas fa-redo"></i> Analyze Another
+            </button>
+          </div>
+
+          <!-- Compact Features -->
+          <div class="features">
+            <div class="feature">
+              <div class="feature-icon">
+                <i class="fas fa-brain"></i>
+              </div>
+              <div class="feature-title">AI-Powered</div>
+              <div class="feature-desc">Advanced deep learning</div>
+            </div>
+            <div class="feature">
+              <div class="feature-icon">
+                <i class="fas fa-bolt"></i>
+              </div>
+              <div class="feature-title">Real-time</div>
+              <div class="feature-desc">Instant analysis</div>
+            </div>
+            <div class="feature">
+              <div class="feature-icon">
+                <i class="fas fa-shield-alt"></i>
+              </div>
+              <div class="feature-title">Safety First</div>
+              <div class="feature-desc">Prevent accidents</div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <p>&copy; 2025 Driver Safety AI. Advanced AI technology for road safety.</p>
+      </div>
+    </footer>
+
+    <script>
+      const imageInput = document.getElementById('imageInput');
+      const previewSection = document.getElementById('previewSection');
+      const previewImage = document.getElementById('previewImage');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      const loading = document.getElementById('loading');
+      const resultSection = document.getElementById('resultSection');
+      const uploadArea = document.querySelector('.upload-area');
+
+      // Handle file input change
+      imageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          displayPreview(file);
+        }
+      });
+
+      // Handle drag and drop
+      uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+      });
+
+      uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+      });
+
+      uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          imageInput.files = files;
+          displayPreview(files[0]);
+        }
+      });
+
+      function displayPreview(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImage.src = e.target.result;
+          previewSection.style.display = 'block';
+          analyzeBtn.style.display = 'inline-block';
+          resultSection.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+
+      async function analyzeImage() {
+        const formData = new FormData();
+        formData.append('image', imageInput.files[0]);
+        
+        // Show loading
+        loading.style.display = 'block';
+        analyzeBtn.disabled = true;
+        resultSection.style.display = 'none';
+        
+        try {
+          const response = await fetch('/predict', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const result = await response.json();
+          
+          // Hide loading
+          loading.style.display = 'none';
+          analyzeBtn.disabled = false;
+          
+          if (response.ok) {
+            displayResult(result);
+          } else {
+            displayError(result.error || 'An error occurred');
+          }
+        } catch (error) {
+          loading.style.display = 'none';
+          analyzeBtn.disabled = false;
+          displayError('Network error: ' + error.message);
+        }
+      }
+
+      function displayResult(result) {
+        const { status, confidence } = result;
+        const isDrowsy = status === 'Drowsy';
+        
+        // Set result container class
+        resultSection.className = 'result-section ' + (isDrowsy ? 'result-drowsy' : 'result-alert');
+        
+        // Set icon
+        document.getElementById('resultIcon').innerHTML = isDrowsy ? 
+          '<i class="fas fa-exclamation-triangle"></i>' : 
+          '<i class="fas fa-check-circle"></i>';
+        
+        // Set status text
+        document.getElementById('resultStatus').textContent = status;
+        
+        // Set confidence text
+        document.getElementById('resultConfidence').textContent = 
+          `Confidence: ${(confidence * 100).toFixed(1)}%`;
+        
+        // Animate confidence bar
+        const confidenceFill = document.getElementById('confidenceFill');
+        setTimeout(() => {
+          confidenceFill.style.width = (confidence * 100) + '%';
+        }, 100);
+        
+        document.getElementById('confidenceText').textContent = 
+          `Analysis Confidence: ${(confidence * 100).toFixed(1)}%`;
+        
+        // Show result
+        resultSection.style.display = 'block';
+      }
+
+      function displayError(errorMessage) {
+        resultSection.className = 'result-section result-drowsy';
+        document.getElementById('resultIcon').innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+        document.getElementById('resultStatus').textContent = 'Error';
+        document.getElementById('resultConfidence').textContent = errorMessage;
+        document.getElementById('confidenceText').textContent = '';
+        document.getElementById('confidenceFill').style.width = '0%';
+        resultSection.style.display = 'block';
+      }
+
+      function resetUpload() {
+        imageInput.value = '';
+        previewSection.style.display = 'none';
+        resultSection.style.display = 'none';
+        analyzeBtn.style.display = 'none';
+      }
+    </script>
+  </body>
+</html>
